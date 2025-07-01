@@ -1,8 +1,18 @@
-import { getShopifyOrders } from './getShopifyOrders.js';
+const express = require("express");
+const { Arcade } = require("arcade-js");
+const { getShopifyOrders } = require("./getShopifyOrders");
 
-export default async function ({ input }) {
-  const { shop, accessToken, startDate, endDate } = input;
+const app = express();
+const port = process.env.PORT || 8002;
 
-  const orders = await getShopifyOrders(shop, accessToken, startDate, endDate);
-  return { orders };
-}
+const arcade = new Arcade({ secret: process.env.ARCADE_SECRET || "dev" });
+
+// Register your tool
+arcade.tool("getShopifyOrders", getShopifyOrders);
+
+// Register with Express
+app.use("/", arcade.router());
+
+app.listen(port, () => {
+  console.log(`Arcade worker running on port ${port}`);
+});
