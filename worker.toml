@@ -1,0 +1,10 @@
+[[worker]]
+
+[worker.config]
+id = "demo-worker"
+enabled = true
+timeout = 30
+retries = 3
+secret = "566059781b71ff8357a8e996b8afab30"
+[worker.local_source]
+packages = [ "./get_shopify_orders",]
