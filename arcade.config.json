@@ -1,0 +1,8 @@
+{
+  "tools": [
+    {
+      "name": "getShopifyOrders",
+      "entry": "./getShopifyOrders.js"
+    }
+  ]
+}
