@@ -7,7 +7,7 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@arcade/sdk": "git+https://github.com/arc-dev/arcade-sdk.git",
+    "@arcade/sdk": "https://github.com/arc-dev/arcade-sdk.git",
     "axios": "^1.6.8",
     "googleapis": "^127.0.0"
   }
