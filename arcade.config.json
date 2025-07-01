@@ -1,0 +1,8 @@
+{
+  "tools": [
+    {
+      "name": "Shopify.GetOrders",
+      "entrypoint": "index.js"
+    }
+  ]
+}
