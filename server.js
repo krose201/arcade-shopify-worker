@@ -4,7 +4,7 @@ const { fetchShopifyOrders } = require('./shopify');
 const { summarizeOrders } = require('./orderSummary');
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
   res.send('Arcade Shopify Worker is running!');
@@ -35,6 +35,6 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Arcade Shopify Worker running on port ${PORT}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Arcade Shopify Worker running on port ${process.env.PORT || 3000}`);
 });
