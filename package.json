@@ -1,0 +1,8 @@
+{
+  "name": "arcade-shopify-worker",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
