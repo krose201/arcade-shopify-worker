@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import httpx
 import json
 
-from arcade_tdk import tool, ToolContext
+from arcade_tdk import tool, ToolContext  # type: ignore
 
 
 async def fetch_shopify_orders(store_url: str, access_token: str) -> List[Dict[str, Any]]:

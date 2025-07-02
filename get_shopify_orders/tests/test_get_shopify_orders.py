@@ -1,5 +1,5 @@
 # tests/test_get_shopify_orders.py
-import pytest
+import pytest  # type: ignore
 import os
 from unittest.mock import patch, AsyncMock, MagicMock
 import httpx
