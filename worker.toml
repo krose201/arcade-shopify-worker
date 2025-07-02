@@ -1,7 +1,7 @@
 [[worker]]
 
 [worker.config]
-id = "demo-worker"
+id = "get_shopify_orders"
 enabled = true
 timeout = 30
 retries = 3

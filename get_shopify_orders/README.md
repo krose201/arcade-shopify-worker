@@ -1,35 +1,87 @@
-<div style="display: flex; justify-content: center; align-items: center;">
-  <img
-    src="https://docs.arcade.dev/images/logo/arcade-logo.png"
-    style="width: 250px;"
-  >
-</div>
+# Shopify Orders Arcade Tool
 
-<div style="display: flex; justify-content: center; align-items: center; margin-bottom: 8px;">
-  <img src="https://img.shields.io/github/v/release/brianplynn/get_shopify_orders" alt="GitHub release" style="margin: 0 2px;">
-  <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python version" style="margin: 0 2px;">
-  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" style="margin: 0 2px;">
-  <img src="https://img.shields.io/pypi/v/arcade_get_shopify_orders" alt="PyPI version" style="margin: 0 2px;">
-</div>
-<div style="display: flex; justify-content: center; align-items: center;">
-  <a href="https://github.com/brianplynn/get_shopify_orders" target="_blank">
-    <img src="https://img.shields.io/github/stars/brianplynn/get_shopify_orders" alt="GitHub stars" style="margin: 0 2px;">
-  </a>
-  <a href="https://github.com/brianplynn/get_shopify_orders/fork" target="_blank">
-    <img src="https://img.shields.io/github/forks/brianplynn/get_shopify_orders" alt="GitHub forks" style="margin: 0 2px;">
-  </a>
-</div>
+This tool fetches and summarizes Shopify orders data, supporting both single and multi-store configurations using **Arcade's secure secrets management**.
 
+## 🔐 **Recommended Setup: Arcade Secrets**
 
-<br>
-<br>
+**For the most secure setup, use Arcade's secrets management:**
 
-# Arcade get_shopify_orders Toolkit
-Gets shopify order data for a store
-## Features
+👉 **[Complete Arcade Secrets Setup Guide](./ARCADE_SECRETS_SETUP.md)** 👈
 
-- The get_shopify_orders toolkit does not have any features yet.
+### Quick Start with Secrets:
+1. Go to your Arcade Dashboard → Auth → Secrets
+2. Add these secrets:
+   - `SHOPIFY_STORE_URL`: `yourstore.myshopify.com`
+   - `SHOPIFY_ACCESS_TOKEN`: `shpat_your_token_here`
+3. Your tool is ready to use! 🎉
 
-## Development
+---
 
-Read the docs on how to create a toolkit [here](https://docs.arcade.dev/home/build-tools/create-a-toolkit)
+## 🛠️ Installation
+
+```bash
+cd get_shopify_orders
+uv sync
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+make test-coverage
+
+# Type checking
+make type-check
+
+# Linting
+make lint
+```
+
+## 📊 Usage
+
+### Single Store:
+```python
+# Uses SHOPIFY_STORE_URL and SHOPIFY_ACCESS_TOKEN secrets
+result = await get_shopify_orders(context)
+```
+
+### Multi-Store:
+```python
+# Uses SHOPIFY_STORE1_URL and SHOPIFY_STORE1_ACCESS_TOKEN secrets
+result = await get_shopify_orders(context, "STORE1")
+```
+
+## 📋 Response Format
+
+Returns daily order summaries with:
+- Order counts (new vs returning customers)
+- Sales data (gross, net, discounts, returns)
+- Shipping, taxes, and additional fees
+- Quantity sold and returned
+- Week/month end dates for reporting
+
+## 🔧 Alternative: Environment Variables
+
+If you prefer environment variables over Arcade secrets:
+
+👉 **[Environment Variables Setup Guide](./MULTI_STORE_SETUP.md)**
+
+**Note**: Arcade secrets are more secure and recommended for production use.
+
+## 🚨 Troubleshooting
+
+- **"Missing Shopify secrets"**: Add required secrets in Arcade Dashboard
+- **"401 Unauthorized"**: Check your access token permissions
+- **"404 Not Found"**: Verify your store URL format
+
+See the [Arcade Secrets Setup Guide](./ARCADE_SECRETS_SETUP.md) for detailed troubleshooting steps.
+
+## 🔒 Security
+
+- ✅ Uses Arcade's encrypted secrets management
+- ✅ Minimum required API permissions (`read_orders`, `read_customers`)
+- ✅ Separate tokens for each store
+- ✅ No sensitive data in code or config files

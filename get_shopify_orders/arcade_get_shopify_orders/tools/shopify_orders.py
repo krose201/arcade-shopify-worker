@@ -3,30 +3,39 @@ import os
 from typing import Annotated, Dict, List, Any
 from datetime import datetime, timedelta
 import httpx
+import json
 
-from arcade_tdk import tool
+from arcade_tdk import tool, ToolContext
 
 
-async def fetch_shopify_orders(store_url: str, access_token: str, limit: int = 250) -> List[Dict[str, Any]]:
-    """Fetch orders from Shopify API"""
-    url = f"https://{store_url}/admin/api/2023-10/orders.json"
-    params = {"limit": limit, "status": "any"}
+async def fetch_shopify_orders(store_url: str, access_token: str) -> List[Dict[str, Any]]:
+    """Fetch orders from Shopify API."""
+    url = f"https://{store_url}/admin/api/2024-01/orders.json"
+    
+    # Properly type the params dict for httpx
+    params: Dict[str, str] = {
+        "status": "any",
+        "limit": "250",
+        "fields": "id,name,created_at,customer,total_price,subtotal_price,total_discounts,total_tax,shipping_lines,refunds,line_items"
+    }
+    
+    headers = {
+        "X-Shopify-Access-Token": access_token,
+        "Content-Type": "application/json"
+    }
     
     async with httpx.AsyncClient() as client:
-        response = await client.get(
-            url,
-            headers={
-                "X-Shopify-Access-Token": access_token,
-                "Content-Type": "application/json"
-            },
-            params=params
-        )
-        
-        if not response.is_success:
-            raise Exception(f"[Shopify] {response.status_code} {response.reason_phrase}: {response.text}")
-        
-        data = response.json()
-        return data.get("orders", [])
+        try:
+            response = await client.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            # Explicitly type the return to satisfy mypy
+            orders: List[Dict[str, Any]] = data.get("orders", [])
+            return orders
+        except httpx.HTTPStatusError as e:
+            raise Exception(f"[Shopify] {e.response.status_code} {e.response.reason_phrase}")
+        except Exception as e:
+            raise Exception(f"[Shopify] API Error: {str(e)}")
 
 
 def get_period_ends(date_str: str) -> Dict[str, str]:
@@ -105,39 +114,80 @@ def summarize_orders(orders: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         g["Quantity_c"] += qty
         g["Quantity_r"] += 0  # Update if you want to handle returns/refunds
     
+    # Round all monetary values to 2 decimal places to fix floating point errors
+    for group in grouped.values():
+        group["Gross_sale"] = round(group["Gross_sale"], 2)
+        group["Discounts"] = round(group["Discounts"], 2)
+        group["Returns"] = round(group["Returns"], 2)
+        group["Net_sales"] = round(group["Net_sales"], 2)
+        group["Shipping_"] = round(group["Shipping_"], 2)
+        group["Duties"] = round(group["Duties"], 2)
+        group["Additional_"] = round(group["Additional_"], 2)
+        group["Taxes"] = round(group["Taxes"], 2)
+        group["Total_sales"] = round(group["Total_sales"], 2)
+    
     # Sort by date descending
     return sorted(grouped.values(), key=lambda x: x["Day"], reverse=True)
 
 
-@tool
-async def get_shopify_orders() -> Annotated[Dict[str, Any], "Summary of Shopify orders grouped by day and customer type"]:
+@tool(requires_secrets=["SHOPIFY_STORE_URL", "SHOPIFY_ACCESS_TOKEN"])
+async def get_shopify_orders(
+    context: ToolContext,
+    store_key: Annotated[str, "Optional store identifier (e.g., 'STORE1', 'STORE2'). If not provided, uses default credentials."] = ""
+) -> Annotated[Dict[str, Any], "Summary of Shopify orders grouped by day and customer type"]:
     """
     Fetch and summarize Shopify orders from the configured store.
     
     Retrieves the latest 250 orders from Shopify and groups them by day and customer type
     (new vs returning), providing sales metrics and quantities.
     
-    Requires environment variables:
+    Required Arcade Secrets:
     - SHOPIFY_STORE_URL: Your Shopify store URL (e.g., 'your-store.myshopify.com')
     - SHOPIFY_ACCESS_TOKEN: Your Shopify Admin API access token
+    
+    For multiple stores, add additional secrets with store keys:
+    - SHOPIFY_STORE1_URL, SHOPIFY_STORE1_ACCESS_TOKEN
+    - SHOPIFY_STORE2_URL, SHOPIFY_STORE2_ACCESS_TOKEN
+    - etc.
+    
+    Args:
+        context: Arcade tool context for accessing secrets
+        store_key: Optional store identifier (e.g., 'STORE1', 'STORE2')
     
     Returns:
         Dictionary containing 'summary' key with list of daily order summaries
         
     Examples:
         get_shopify_orders() -> {"summary": [{"Day": "2024-01-15", "Orders": 5, ...}]}
+        get_shopify_orders("STORE1") -> {"summary": [...]}
     """
-    store_url = os.getenv("SHOPIFY_STORE_URL")
-    access_token = os.getenv("SHOPIFY_ACCESS_TOKEN")
-    
-    if not store_url or not access_token:
-        return {
-            "error": "Missing Shopify credentials. Please set SHOPIFY_STORE_URL and SHOPIFY_ACCESS_TOKEN environment variables."
-        }
-    
     try:
-        orders = await fetch_shopify_orders(store_url, access_token, limit=250)
+        if store_key:
+            # Multi-store mode - try to get store-specific secrets
+            store_url_key = f"SHOPIFY_{store_key}_URL"
+            access_token_key = f"SHOPIFY_{store_key}_ACCESS_TOKEN"
+            
+            try:
+                store_url = context.get_secret(store_url_key)
+                access_token = context.get_secret(access_token_key)
+            except Exception:
+                return {
+                    "error": f"Missing Shopify secrets for store '{store_key}'. Please add secrets: {store_url_key} and {access_token_key} in the Arcade Dashboard."
+                }
+        else:
+            # Single store mode - use default secrets
+            try:
+                store_url = context.get_secret("SHOPIFY_STORE_URL")
+                access_token = context.get_secret("SHOPIFY_ACCESS_TOKEN")
+            except Exception:
+                return {
+                    "error": "Missing Shopify secrets. Please add SHOPIFY_STORE_URL and SHOPIFY_ACCESS_TOKEN secrets in the Arcade Dashboard."
+                }
+        
+        # Fetch and summarize orders
+        orders = await fetch_shopify_orders(store_url, access_token)
         summary = summarize_orders(orders)
-        return {"summary": summary}
+        return {"summary": summary, "store": store_key or "default"}
+        
     except Exception as e:
         return {"error": str(e)}
