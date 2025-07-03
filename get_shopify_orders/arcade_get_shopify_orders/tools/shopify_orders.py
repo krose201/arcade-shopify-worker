@@ -130,7 +130,7 @@ def summarize_orders(orders: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return sorted(grouped.values(), key=lambda x: x["Day"], reverse=True)
 
 
-@tool(requires_secrets=["SHOPIFY_STORE_URL", "SHOPIFY_ACCESS_TOKEN"])
+@tool(requires_secrets=["SHOPIFY_STORE_URL", "SHOPIFY_ACCESS_TOKEN", "SHOPIFY_OGTHREAD_URL", "SHOPIFY_OGTHREAD_ACCESS_TOKEN", "GOOGLE_SHEET_ID"])
 async def get_shopify_orders(
     context: ToolContext,
     store_key: Annotated[str, "Optional store identifier (e.g., 'STORE1', 'STORE2'). If not provided, uses default credentials."] = ""
@@ -169,25 +169,31 @@ async def get_shopify_orders(
             
             try:
                 store_url = context.get_secret(store_url_key)
-                access_token = context.get_secret(access_token_key)
-            except Exception:
+            except Exception as e:
                 return {
-                    "error": f"Missing Shopify secrets for store '{store_key}'. Please add secrets: {store_url_key} and {access_token_key} in the Arcade Dashboard."
+                    "error": f"Missing secret '{store_url_key}' for store '{store_key}'. Error: {str(e)}. Please add this secret in the Arcade Dashboard."
+                }
+            
+            try:
+                access_token = context.get_secret(access_token_key)
+            except Exception as e:
+                return {
+                    "error": f"Missing secret '{access_token_key}' for store '{store_key}'. Error: {str(e)}. Please add this secret in the Arcade Dashboard."
                 }
         else:
             # Single store mode - use default secrets
             try:
                 store_url = context.get_secret("SHOPIFY_STORE_URL")
                 access_token = context.get_secret("SHOPIFY_ACCESS_TOKEN")
-            except Exception:
+            except Exception as e:
                 return {
-                    "error": "Missing Shopify secrets. Please add SHOPIFY_STORE_URL and SHOPIFY_ACCESS_TOKEN secrets in the Arcade Dashboard."
+                    "error": f"Missing Shopify secrets. Error: {str(e)}. Please add SHOPIFY_STORE_URL and SHOPIFY_ACCESS_TOKEN secrets in the Arcade Dashboard."
                 }
         
         # Fetch and summarize orders
         orders = await fetch_shopify_orders(store_url, access_token)
         summary = summarize_orders(orders)
-        return {"summary": summary, "store": store_key or "default"}
+        return {"summary": summary, "sheet_id": context.get_secret("GOOGLE_SHEET_ID"), "store": store_key or "default"}
         
     except Exception as e:
         return {"error": str(e)}
