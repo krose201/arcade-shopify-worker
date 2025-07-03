@@ -1,0 +1,17 @@
+{
+  "name": "run_workers",
+  "version": "1.0.0",
+  "main": "run.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@arcadeai/arcadejs": "^1.8.1",
+    "dotenv": "^17.0.1"
+  },
+  "type": "module"
+}
